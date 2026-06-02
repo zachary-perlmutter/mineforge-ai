@@ -8,18 +8,33 @@ A DevOps portfolio project demonstrating end-to-end infrastructure automation: T
 
 ## Architecture
 
-```
-GitHub ──► ArgoCD ──► K3s on EC2
-                         │
-              ┌──────────┼──────────────┐
-              │          │              │
-       Minecraft     Prometheus     Ollama
-        Pods +        Grafana +    AI Agent
-       Longhorn        Loki +
-        PVCs          Dynmap
-              │
-       Web Portal
-    (FastAPI + React)
+```mermaid
+flowchart TD
+    Dev([Developer]) -->|git push| GH[GitHub\nmineforge-ai]
+    GH -->|watches & syncs| ArgoCD[ArgoCD]
+
+    subgraph AWS [AWS EC2]
+        subgraph K3s [K3s Cluster]
+            ArgoCD --> MC["Minecraft Pods\nitzg/minecraft-server"]
+            ArgoCD --> OBS["Prometheus + Grafana\nLoki + Alertmanager"]
+            ArgoCD --> OLLAMA["Ollama AI Agent\nllama3 / mistral"]
+            ArgoCD --> PORTAL["Web Portal\nFastAPI + React"]
+
+            MC <-->|world data| LH[Longhorn\nPersistent Storage]
+            MC -->|metrics + logs| OBS
+            MC -->|live map| DM[Dynmap\nport 8123]
+
+            OBS -->|context feed| OLLAMA
+            OLLAMA -->|auto-heal| MC
+
+            PORTAL -->|Kubernetes API| MC
+        end
+    end
+
+    Player([Minecraft Client]) -->|port 25565| MC
+    Browser([Browser]) -->|Web Portal| PORTAL
+    Browser -->|Dynmap| DM
+    Browser -->|Grafana| OBS
 ```
 
 ---
