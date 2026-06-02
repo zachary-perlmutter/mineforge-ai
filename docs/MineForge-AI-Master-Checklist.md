@@ -1,0 +1,178 @@
+# MineForge AI - Master Checklist
+
+Check things off as you go. Reference `MineForge-AI-Project-Plan.md` for full context on any decision.
+
+---
+
+## Pre-Build: Environment Setup
+
+### MCP Servers (Claude Code)
+- [ ] Install `kubernetes` MCP server — `npx @modelcontextprotocol/mcp-server-kubernetes`
+- [ ] Install `terraform` MCP server — `npx @modelcontextprotocol/server-terraform`
+- [ ] Install `filesystem` MCP server — `npx @modelcontextprotocol/server-filesystem`
+- [ ] Install `docker` MCP server — `docker run -i --rm -v /var/run/docker.sock:/var/run/docker.sock mcp/docker`
+- [ ] Install `ansible` MCP server — `pip install ansible-mcp-server`
+- [ ] Install `helm` MCP server
+- [ ] Install `shell` MCP server — `npx @modelcontextprotocol/server-bash`
+
+### AWS Account Setup
+- [x] Create new AWS account for MineForge AI (used existing account 908730890940)
+- [x] Create IAM user with appropriate permissions (used Admin user)
+- [x] Run `aws configure --profile mineforge` to save credentials
+- [x] Set `AWS_PROFILE=mineforge` — using `--profile mineforge` explicitly on every AWS command instead (safer)
+- [x] Confirm MCP server targets correct account (not old project)
+
+### Local Dev Environment
+- [x] Install AWS CLI
+- [x] Install `kubectl` (v1.36.1)
+- [x] Install `terraform` (v1.12.1)
+- [x] Install `helm` (v4.2.0)
+- [x] Install `ansible` (core 2.20.6)
+- [x] Install `k3sup` (v0.13.12)
+- [x] Install Lens (Kubernetes UI)
+
+---
+
+## Phase 1: Planning & GitHub Setup
+
+- [x] Create GitHub repository (`mineforge-ai`)
+- [x] Add MIT license
+- [x] Write initial README with project overview
+- [x] Create architecture diagram
+- [x] Set up branch protection rules on `main`
+- [x] Create folder structure: `/terraform`, `/ansible`, `/k8s`, `/app`, `/docs`
+
+---
+
+## Phase 2: K3s Cluster on AWS EC2
+
+- [ ] Write Terraform to provision EC2 instances (1–2 x `t3.medium` or `t3.large`)
+- [ ] Configure VPC, security groups, key pairs via Terraform
+- [ ] Apply Terraform — verify instances are running
+- [ ] Run Ansible playbook to install K3s on nodes
+- [ ] Copy kubeconfig locally — verify `kubectl get nodes` works
+- [ ] Validate cluster health
+
+---
+
+## Phase 3: Basic Minecraft Deployment
+
+- [ ] Write Kubernetes manifest for `itzg/minecraft-server` pod
+- [ ] Add PersistentVolumeClaim for world data (Longhorn)
+- [ ] Install Longhorn via Helm for distributed storage
+- [ ] Expose Minecraft server via NodePort or LoadBalancer (port 25565)
+- [ ] Connect to server from Minecraft client — confirm it works
+- [ ] Test world persistence across pod restart
+
+---
+
+## Phase 4: Monitoring & Visuals
+
+- [ ] Install `kube-prometheus-stack` via Helm (Prometheus + Grafana + AlertManager)
+- [ ] Install Loki for log aggregation
+- [ ] Install Dynmap plugin on Minecraft server
+- [ ] Expose Dynmap web UI (port 8123)
+- [ ] Build Grafana dashboard: player count, CPU/RAM, pod health
+- [ ] Set up basic alerts (pod crash, high memory)
+
+---
+
+## Phase 5: Infrastructure as Code (Terraform)
+
+- [ ] Convert all manual AWS resources to Terraform modules
+- [ ] Set up remote Terraform state (S3 bucket + DynamoDB lock table)
+- [ ] Add Terraform module for Kubernetes namespaces and RBAC
+- [ ] Push all Terraform code to GitHub
+- [ ] Verify `terraform destroy` + `terraform apply` recreates everything cleanly
+
+---
+
+## Phase 6: Configuration Management (Ansible)
+
+- [ ] Write playbook: K3s node bootstrap (install K3s, Docker, dependencies)
+- [ ] Write playbook: firewall rules and security hardening
+- [ ] Write playbook: Longhorn prerequisites
+- [ ] Write playbook: system tuning for Minecraft (JVM flags, ulimits)
+- [ ] Test idempotency — run playbooks twice, confirm no changes on second run
+- [ ] Push all playbooks to GitHub under `/ansible`
+
+---
+
+## Phase 7: GitOps with ArgoCD
+
+- [ ] Install ArgoCD via Helm
+- [ ] Expose ArgoCD UI (port-forward or ingress)
+- [ ] Move all Kubernetes manifests to `/k8s` in GitHub repo
+- [ ] Create ArgoCD Application CRDs pointing at GitHub repo
+- [ ] Verify ArgoCD auto-syncs on git push
+- [ ] Set up sync policies (auto-heal, prune orphaned resources)
+
+---
+
+## Phase 8: Self-Healing & Automation
+
+- [ ] Add liveness probe to Minecraft pod (TCP check on port 25565)
+- [ ] Add readiness probe
+- [ ] Configure resource requests and limits per Minecraft pod
+- [ ] Set up Horizontal Pod Autoscaler (HPA) if running multi-tenant
+- [ ] Test self-healing: `kubectl delete pod <minecraft>` → watch it recover
+- [ ] Set up AlertManager rules to page (or log) on repeated crashes
+
+---
+
+## Phase 9: AI Layer (Ollama + Agent)
+
+- [ ] Deploy Ollama as a Kubernetes Deployment
+- [ ] Pull a model into Ollama (e.g., `llama3`, `mistral`)
+- [ ] Write AI agent script to read Minecraft logs and call Ollama
+- [ ] Agent action: detect crash patterns → suggest fix
+- [ ] Agent action: auto-apply simple fixes (restart pod, adjust memory limits)
+- [ ] Connect Prometheus metrics feed to agent for context
+- [ ] Test end-to-end: crash server → agent detects → agent fixes
+
+---
+
+## Phase 10: Web Portal
+
+- [ ] Build simple Flask or FastAPI backend
+- [ ] Endpoints: list servers, create server, delete server, get status
+- [ ] Backend calls Kubernetes API to spin up/down Minecraft pods
+- [ ] Build simple frontend (React or plain HTML) with "Create Server" button
+- [ ] Connect frontend to Supabase for server records and user data
+- [ ] Deploy frontend (Vercel or as a Kubernetes pod)
+- [ ] Test full flow: click "Create" → pod spins up → Dynmap goes live
+
+---
+
+## Phase 11: Polish & Chaos Engineering
+
+- [ ] Run chaos test: delete Minecraft pod mid-game → verify recovery
+- [ ] Run chaos test: kill a K3s node → verify workloads reschedule
+- [ ] Set up automated world backups (Velero or cron job to S3)
+- [ ] Add optional Discord OAuth for web portal login
+- [ ] Write architecture diagram (final version)
+- [ ] Write detailed README with setup instructions
+- [ ] Record demo video (follow `MineForge-AI-Video-Script.md`)
+- [ ] Add GitHub Actions CI/CD pipeline
+- [ ] Optional: deploy same stack to Hetzner to show multi-cloud
+
+---
+
+## Nice-to-Haves (Stretch Goals)
+
+- [ ] Cost tracking dashboard in Grafana (AWS Cost Explorer API)
+- [ ] Player analytics (join/leave events, playtime graphs)
+- [ ] Multi-cloud: deploy same Terraform/Ansible to DigitalOcean or Hetzner
+- [ ] Discord bot to create/destroy servers via slash commands
+- [ ] Backstage developer portal integration
+
+---
+
+## Launch Checklist
+
+- [ ] All core phases complete
+- [ ] Demo video recorded and uploaded
+- [ ] GitHub repo is public and polished
+- [ ] README has architecture diagram, tech stack, and demo link
+- [ ] LinkedIn post written
+- [ ] Project added to resume and portfolio site
