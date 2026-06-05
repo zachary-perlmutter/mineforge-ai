@@ -1,0 +1,249 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mineforge-dashboard
+  namespace: monitoring
+  labels:
+    grafana_dashboard: "1"
+data:
+  mineforge.json: |
+    {
+      "title": "MineForge AI",
+      "uid": "mineforge-ai",
+      "tags": ["minecraft", "mineforge"],
+      "refresh": "30s",
+      "time": { "from": "now-1h", "to": "now" },
+      "panels": [
+        {
+          "id": 1,
+          "type": "stat",
+          "title": "Minecraft Pod Status",
+          "gridPos": { "x": 0, "y": 0, "w": 4, "h": 4 },
+          "targets": [{
+            "expr": "kube_pod_status_ready{namespace=\"minecraft\", condition=\"true\"}",
+            "legendFormat": "Ready"
+          }],
+          "options": {
+            "reduceOptions": { "calcs": ["lastNotNull"] },
+            "colorMode": "background",
+            "graphMode": "none",
+            "textMode": "auto"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "mappings": [
+                { "options": { "0": { "text": "DOWN", "color": "red" }, "1": { "text": "UP", "color": "green" } }, "type": "value" }
+              ],
+              "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 1 }] }
+            }
+          }
+        },
+        {
+          "id": 2,
+          "type": "stat",
+          "title": "Pod Restarts",
+          "gridPos": { "x": 4, "y": 0, "w": 4, "h": 4 },
+          "targets": [{
+            "expr": "sum(kube_pod_container_status_restarts_total{namespace=\"minecraft\"})",
+            "legendFormat": "Restarts"
+          }],
+          "options": {
+            "reduceOptions": { "calcs": ["lastNotNull"] },
+            "colorMode": "background",
+            "graphMode": "none"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 3 }, { "color": "red", "value": 10 }] }
+            }
+          }
+        },
+        {
+          "id": 3,
+          "type": "stat",
+          "title": "Node CPU Usage",
+          "gridPos": { "x": 8, "y": 0, "w": 4, "h": 4 },
+          "targets": [{
+            "expr": "100 - (avg(rate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)",
+            "legendFormat": "CPU %"
+          }],
+          "options": {
+            "reduceOptions": { "calcs": ["lastNotNull"] },
+            "colorMode": "background",
+            "graphMode": "none",
+            "textMode": "auto"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percent",
+              "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 70 }, { "color": "red", "value": 90 }] }
+            }
+          }
+        },
+        {
+          "id": 4,
+          "type": "stat",
+          "title": "Node Memory Used",
+          "gridPos": { "x": 12, "y": 0, "w": 4, "h": 4 },
+          "targets": [{
+            "expr": "100 * (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes))",
+            "legendFormat": "Memory %"
+          }],
+          "options": {
+            "reduceOptions": { "calcs": ["lastNotNull"] },
+            "colorMode": "background",
+            "graphMode": "none"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percent",
+              "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 70 }, { "color": "red", "value": 90 }] }
+            }
+          }
+        },
+        {
+          "id": 5,
+          "type": "stat",
+          "title": "Node Memory Available",
+          "gridPos": { "x": 16, "y": 0, "w": 4, "h": 4 },
+          "targets": [{
+            "expr": "node_memory_MemAvailable_bytes",
+            "legendFormat": "Available"
+          }],
+          "options": {
+            "reduceOptions": { "calcs": ["lastNotNull"] },
+            "colorMode": "background",
+            "graphMode": "none"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "bytes",
+              "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "yellow", "value": 524288000 }, { "color": "green", "value": 1073741824 }] }
+            }
+          }
+        },
+        {
+          "id": 6,
+          "type": "stat",
+          "title": "Swap Used",
+          "gridPos": { "x": 20, "y": 0, "w": 4, "h": 4 },
+          "targets": [{
+            "expr": "node_memory_SwapTotal_bytes - node_memory_SwapFree_bytes",
+            "legendFormat": "Swap Used"
+          }],
+          "options": {
+            "reduceOptions": { "calcs": ["lastNotNull"] },
+            "colorMode": "background",
+            "graphMode": "none"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "bytes",
+              "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 524288000 }, { "color": "red", "value": 1073741824 }] }
+            }
+          }
+        },
+        {
+          "id": 7,
+          "type": "timeseries",
+          "title": "Node CPU Usage",
+          "gridPos": { "x": 0, "y": 4, "w": 12, "h": 8 },
+          "targets": [{
+            "expr": "100 - (avg(rate(node_cpu_seconds_total{mode=\"idle\"}[2m])) * 100)",
+            "legendFormat": "CPU %"
+          }],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percent",
+              "color": { "mode": "palette-classic" },
+              "custom": { "lineWidth": 2, "fillOpacity": 10 },
+              "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 90 }] }
+            }
+          }
+        },
+        {
+          "id": 8,
+          "type": "timeseries",
+          "title": "Node Memory",
+          "gridPos": { "x": 12, "y": 4, "w": 12, "h": 8 },
+          "targets": [
+            { "expr": "node_memory_MemTotal_bytes", "legendFormat": "Total" },
+            { "expr": "node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes", "legendFormat": "Used" },
+            { "expr": "node_memory_SwapTotal_bytes - node_memory_SwapFree_bytes", "legendFormat": "Swap Used" }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "bytes",
+              "custom": { "lineWidth": 2, "fillOpacity": 10 }
+            }
+          }
+        },
+        {
+          "id": 9,
+          "type": "timeseries",
+          "title": "Minecraft Container Memory",
+          "gridPos": { "x": 0, "y": 12, "w": 12, "h": 8 },
+          "targets": [{
+            "expr": "container_memory_working_set_bytes{namespace=\"minecraft\", container=\"minecraft\"}",
+            "legendFormat": "Minecraft RAM"
+          }],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "bytes",
+              "custom": { "lineWidth": 2, "fillOpacity": 10 },
+              "color": { "fixedColor": "purple", "mode": "fixed" }
+            }
+          }
+        },
+        {
+          "id": 10,
+          "type": "timeseries",
+          "title": "Minecraft Container CPU",
+          "gridPos": { "x": 12, "y": 12, "w": 12, "h": 8 },
+          "targets": [{
+            "expr": "rate(container_cpu_usage_seconds_total{namespace=\"minecraft\", container=\"minecraft\"}[2m]) * 100",
+            "legendFormat": "Minecraft CPU %"
+          }],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percent",
+              "custom": { "lineWidth": 2, "fillOpacity": 10 },
+              "color": { "fixedColor": "orange", "mode": "fixed" }
+            }
+          }
+        },
+        {
+          "id": 11,
+          "type": "timeseries",
+          "title": "Pod Restarts Over Time",
+          "gridPos": { "x": 0, "y": 20, "w": 12, "h": 8 },
+          "targets": [{
+            "expr": "sum(increase(kube_pod_container_status_restarts_total{namespace=\"minecraft\"}[5m]))",
+            "legendFormat": "Restarts"
+          }],
+          "fieldConfig": {
+            "defaults": {
+              "custom": { "lineWidth": 2, "fillOpacity": 10 },
+              "color": { "fixedColor": "red", "mode": "fixed" }
+            }
+          }
+        },
+        {
+          "id": 12,
+          "type": "timeseries",
+          "title": "Network I/O",
+          "gridPos": { "x": 12, "y": 20, "w": 12, "h": 8 },
+          "targets": [
+            { "expr": "rate(node_network_receive_bytes_total{device!=\"lo\"}[2m])", "legendFormat": "RX {{device}}" },
+            { "expr": "rate(node_network_transmit_bytes_total{device!=\"lo\"}[2m])", "legendFormat": "TX {{device}}" }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "Bps",
+              "custom": { "lineWidth": 2, "fillOpacity": 10 }
+            }
+          }
+        }
+      ],
+      "schemaVersion": 36
+    }

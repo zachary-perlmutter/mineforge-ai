@@ -1,0 +1,101 @@
+---
+- name: Install K3s server
+  hosts: k3s_server
+  become: true
+
+  vars:
+    k3s_version: "v1.32.4+k3s1"
+    kubeconfig_local_path: "~/.kube/mineforge"
+
+  tasks:
+    - name: Create 2GB swap file
+      command: fallocate -l 2G /swapfile
+      args:
+        creates: /swapfile
+
+    - name: Set swap file permissions
+      file:
+        path: /swapfile
+        mode: "0600"
+
+    - name: Format swap file
+      command: mkswap /swapfile
+      args:
+        creates: /swapfile
+
+    - name: Enable swap
+      command: swapon /swapfile
+      ignore_errors: true
+
+    - name: Persist swap in fstab
+      lineinfile:
+        path: /etc/fstab
+        line: "/swapfile none swap sw 0 0"
+        state: present
+
+    - name: Set swappiness to 10
+      sysctl:
+        name: vm.swappiness
+        value: "10"
+        sysctl_file: /etc/sysctl.conf
+        reload: true
+
+    - name: Update apt cache
+      apt:
+        update_cache: true
+        cache_valid_time: 3600
+
+    - name: Install prerequisite packages
+      apt:
+        name:
+          - curl
+          - open-iscsi      # required by Longhorn
+          - nfs-common      # required by Longhorn
+          - jq
+        state: present
+
+    - name: Enable and start iscsid
+      systemd:
+        name: iscsid
+        enabled: true
+        state: started
+
+    - name: Write K3s config (TLS SAN + NodePort range)
+      copy:
+        dest: /etc/rancher/k3s/config.yaml
+        content: |
+          tls-san:
+            - "{{ ansible_host }}"
+          kube-apiserver-arg:
+            - service-node-port-range=25000-32767
+        mode: "0644"
+
+    - name: Install K3s
+      shell: >
+        curl -sfL https://get.k3s.io |
+        INSTALL_K3S_VERSION="{{ k3s_version }}"
+        INSTALL_K3S_EXEC="server --disable traefik --write-kubeconfig-mode 644"
+        sh -
+      args:
+        creates: /usr/local/bin/k3s
+
+    - name: Wait for K3s to be ready
+      command: k3s kubectl get nodes
+      register: nodes_ready
+      until: nodes_ready.rc == 0
+      retries: 20
+      delay: 10
+
+    - name: Fetch kubeconfig
+      fetch:
+        src: /etc/rancher/k3s/k3s.yaml
+        dest: "{{ kubeconfig_local_path }}"
+        flat: true
+
+    - name: Replace localhost with public IP in kubeconfig
+      delegate_to: localhost
+      become: false
+      replace:
+        path: "{{ kubeconfig_local_path }}"
+        regexp: 'https://127\.0\.0\.1:6443'
+        replace: "https://{{ ansible_host }}:6443"

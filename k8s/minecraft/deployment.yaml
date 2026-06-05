@@ -1,0 +1,77 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: minecraft
+  namespace: minecraft
+  labels:
+    app: minecraft
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: minecraft
+  strategy:
+    type: Recreate   # required — only one pod can hold the PVC at a time
+  template:
+    metadata:
+      labels:
+        app: minecraft
+    spec:
+      containers:
+        - name: minecraft
+          image: itzg/minecraft-server:latest
+          env:
+            - name: EULA
+              value: "TRUE"
+            - name: TYPE
+              value: "PAPER"
+            - name: VERSION
+              value: "LATEST"
+            - name: MEMORY
+              value: "1024M"
+            - name: DIFFICULTY
+              value: "normal"
+            - name: MAX_PLAYERS
+              value: "10"
+            - name: MOTD
+              value: "MineForge AI — Self-Healing Minecraft"
+            - name: ENABLE_RCON
+              value: "true"
+            - name: RCON_PASSWORD
+              value: "mineforge"
+            - name: RCON_PORT
+              value: "25575"
+            - name: SPAWN_PROTECTION
+              value: "0"
+          ports:
+            - name: minecraft
+              containerPort: 25565
+              protocol: TCP
+            - name: rcon
+              containerPort: 25575
+              protocol: TCP
+          resources:
+            requests:
+              memory: "1Gi"
+              cpu: "500m"
+            limits:
+              memory: "1.5Gi"
+              cpu: "2000m"
+          livenessProbe:
+            tcpSocket:
+              port: 25565
+            initialDelaySeconds: 120
+            periodSeconds: 30
+            failureThreshold: 3
+          readinessProbe:
+            tcpSocket:
+              port: 25565
+            initialDelaySeconds: 60
+            periodSeconds: 10
+          volumeMounts:
+            - name: world-data
+              mountPath: /data
+      volumes:
+        - name: world-data
+          persistentVolumeClaim:
+            claimName: minecraft-world

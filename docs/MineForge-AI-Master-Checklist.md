@@ -46,34 +46,34 @@ Check things off as you go. Reference `MineForge-AI-Project-Plan.md` for full co
 
 ## Phase 2: K3s Cluster on AWS EC2
 
-- [ ] Write Terraform to provision EC2 instances (1–2 x `t3.medium` or `t3.large`)
-- [ ] Configure VPC, security groups, key pairs via Terraform
-- [ ] Apply Terraform — verify instances are running
-- [ ] Run Ansible playbook to install K3s on nodes
-- [ ] Copy kubeconfig locally — verify `kubectl get nodes` works
-- [ ] Validate cluster health
+- [x] Write Terraform to provision EC2 instances (1–2 x `t3.medium` or `t3.large`)
+- [x] Configure VPC, security groups, key pairs via Terraform
+- [x] Apply Terraform — verify instances are running
+- [x] Run Ansible playbook to install K3s on nodes
+- [x] Copy kubeconfig locally — verify `kubectl get nodes` works
+- [x] Validate cluster health
 
 ---
 
 ## Phase 3: Basic Minecraft Deployment
 
-- [ ] Write Kubernetes manifest for `itzg/minecraft-server` pod
-- [ ] Add PersistentVolumeClaim for world data (Longhorn)
-- [ ] Install Longhorn via Helm for distributed storage
-- [ ] Expose Minecraft server via NodePort or LoadBalancer (port 25565)
-- [ ] Connect to server from Minecraft client — confirm it works
-- [ ] Test world persistence across pod restart
+- [x] Write Kubernetes manifest for `itzg/minecraft-server` pod
+- [x] Add PersistentVolumeClaim for world data (Longhorn)
+- [x] Install Longhorn via Helm for distributed storage
+- [x] Expose Minecraft server via NodePort or LoadBalancer (port 25565)
+- [x] Connect to server from Minecraft client — confirm it works
+- [x] Test world persistence across pod restart
 
 ---
 
 ## Phase 4: Monitoring & Visuals
 
-- [ ] Install `kube-prometheus-stack` via Helm (Prometheus + Grafana + AlertManager)
-- [ ] Install Loki for log aggregation
-- [ ] Install Dynmap plugin on Minecraft server
-- [ ] Expose Dynmap web UI (port 8123)
-- [ ] Build Grafana dashboard: player count, CPU/RAM, pod health
-- [ ] Set up basic alerts (pod crash, high memory)
+- [x] Install `kube-prometheus-stack` via Helm (Prometheus + Grafana + AlertManager)
+- [x] Install Loki for log aggregation
+- [x] Install Dynmap plugin on Minecraft server
+- [x] Expose Dynmap web UI (port 8123)
+- [x] Build Grafana dashboard: player count, CPU/RAM, pod health
+- [x] Set up basic alerts (pod crash, high memory)
 
 ---
 
