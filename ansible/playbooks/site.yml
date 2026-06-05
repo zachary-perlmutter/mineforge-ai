@@ -1,0 +1,6 @@
+---
+# Full bootstrap — runs all playbooks in order
+- import_playbook: longhorn-prereqs.yml
+- import_playbook: tuning.yml
+- import_playbook: firewall.yml
+- import_playbook: k3s-install.yml
