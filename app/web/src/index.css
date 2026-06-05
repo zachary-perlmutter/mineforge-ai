@@ -1,14 +1,41 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+:root {
+  --grass:   #5C8A2A;
+  --grass-l: #78B048;
+  --dirt:    #8B6343;
+  --stone:   #2A2A2A;
+  --stone-l: #3A3A3A;
+  --stone-ll:#4A4A4A;
+  --gold:    #F0A000;
+  --diamond: #4DE8E8;
+  --red:     #E03030;
+  --text:    #F0F0E8;
+  --text-dim:#A0A090;
+}
+
 body {
   font-family: Inter, system-ui, sans-serif;
   font-size: 14px;
-  background: #fff;
-  color: #111;
+  background: var(--stone);
+  color: var(--text);
   -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+  /* subtle stone texture via repeating gradient */
+  background-image: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 31px,
+    rgba(0,0,0,0.08) 31px,
+    rgba(0,0,0,0.08) 32px
+  ),
+  repeating-linear-gradient(
+    90deg,
+    transparent,
+    transparent 31px,
+    rgba(0,0,0,0.08) 31px,
+    rgba(0,0,0,0.08) 32px
+  );
 }
 
-button {
-  font-family: inherit;
-  cursor: pointer;
-}
+button { font-family: inherit; cursor: pointer; }

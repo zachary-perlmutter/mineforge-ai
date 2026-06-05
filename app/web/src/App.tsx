@@ -1,68 +1,102 @@
 import { useEffect, useRef, useState } from "react";
 
 const API = import.meta.env.VITE_API_URL ?? "/api";
-
-interface PodStatus {
-  phase: string;
-  restarts: number;
-  ready: boolean;
-}
-
-interface Server {
-  name: string;
-  port: number | null;
-  replicas: number;
-  pod: PodStatus;
-  created_at: string | null;
-}
-
 const NODE_IP = import.meta.env.VITE_NODE_IP ?? "—";
 
-function statusDot(s: Server) {
-  if (s.pod.ready) return { color: "#111", label: "Ready" };
-  if (s.replicas > 0) return { color: "#888", label: "Starting" };
-  return { color: "#ccc", label: "Offline" };
+interface PodStatus { phase: string; restarts: number; ready: boolean; }
+interface Server { name: string; port: number | null; replicas: number; pod: PodStatus; created_at: string | null; }
+
+const C = {
+  grass:   "#5C8A2A",
+  grassL:  "#78B048",
+  dirt:    "#8B6343",
+  stone:   "#2A2A2A",
+  stoneL:  "#3A3A3A",
+  stoneLL: "#4A4A4A",
+  gold:    "#F0A000",
+  diamond: "#4DE8E8",
+  red:     "#E03030",
+  text:    "#F0F0E8",
+  dim:     "#A0A090",
+};
+
+function statusInfo(s: Server) {
+  if (s.pod.ready)        return { color: C.grassL,  label: "● Online",   glow: C.grassL };
+  if (s.replicas > 0)     return { color: C.gold,    label: "◑ Starting", glow: C.gold };
+  return                         { color: C.stoneLL, label: "○ Offline",  glow: "transparent" };
 }
 
-function ServerRow({ server, onDelete }: { server: Server; onDelete: (name: string) => void }) {
+function ServerCard({ server, onDelete }: { server: Server; onDelete: (n: string) => void }) {
   const [deleting, setDeleting] = useState(false);
-  const dot = statusDot(server);
+  const st = statusInfo(server);
 
   async function handleDelete() {
-    if (!confirm(`Delete server "${server.name}"? World data will be lost.`)) return;
+    if (!confirm(`Delete "${server.name}"? World data will be lost forever.`)) return;
     setDeleting(true);
     await fetch(`${API}/servers/${server.name}`, { method: "DELETE" });
     onDelete(server.name);
   }
 
   return (
-    <tr style={{ borderBottom: "1px solid #eee" }}>
-      <td style={{ padding: "12px 0" }}>
-        <span style={{ width: 8, height: 8, borderRadius: "50%", background: dot.color, display: "inline-block", marginRight: 8 }} />
-        <strong>{server.name}</strong>
-      </td>
-      <td style={{ padding: "12px 8px", color: "#555" }}>
-        {server.port ? `${NODE_IP}:${server.port}` : "—"}
-      </td>
-      <td style={{ padding: "12px 8px", color: "#555" }}>{dot.label}</td>
-      <td style={{ padding: "12px 8px", color: "#888" }}>{server.pod.restarts} restarts</td>
-      <td style={{ padding: "12px 0", textAlign: "right" }}>
-        <button
-          onClick={handleDelete}
-          disabled={deleting}
-          style={{
-            background: "none",
-            border: "1px solid #ddd",
-            borderRadius: 4,
-            padding: "4px 12px",
-            fontSize: 13,
-            color: deleting ? "#ccc" : "#111",
-          }}
-        >
-          {deleting ? "Deleting…" : "Delete"}
-        </button>
-      </td>
-    </tr>
+    <div style={{
+      background: C.stoneL,
+      border: `3px solid ${C.stoneLL}`,
+      borderBottom: `3px solid #1a1a1a`,
+      borderRight: `3px solid #1a1a1a`,
+      borderRadius: 2,
+      padding: "16px 20px",
+      display: "flex",
+      alignItems: "center",
+      gap: 16,
+    }}>
+      {/* Grass block icon */}
+      <div style={{
+        width: 40, height: 40, flexShrink: 0, borderRadius: 2,
+        background: `linear-gradient(180deg, ${C.grassL} 40%, ${C.dirt} 40%)`,
+        border: `2px solid #1a1a1a`,
+        imageRendering: "pixelated",
+      }} />
+
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap" }}>
+          <span style={{ fontWeight: 600, fontSize: 15, color: C.text }}>{server.name}</span>
+          <span style={{ fontSize: 12, color: st.color, textShadow: `0 0 8px ${st.glow}` }}>
+            {st.label}
+          </span>
+        </div>
+        <div style={{ marginTop: 4, fontSize: 12, color: C.dim, fontFamily: "monospace" }}>
+          {server.port ? (
+            <span>
+              <span style={{ color: C.diamond }}>connect:</span>{" "}
+              {NODE_IP}:{server.port}
+            </span>
+          ) : "—"}
+          {server.pod.restarts > 0 && (
+            <span style={{ marginLeft: 12, color: C.gold }}>
+              ⚠ {server.pod.restarts} restart{server.pod.restarts !== 1 ? "s" : ""}
+            </span>
+          )}
+        </div>
+      </div>
+
+      <button
+        onClick={handleDelete}
+        disabled={deleting}
+        style={{
+          background: "none",
+          border: `2px solid ${deleting ? C.stoneLL : C.red}`,
+          borderBottom: `2px solid ${deleting ? "#1a1a1a" : "#901a1a"}`,
+          borderRight: `2px solid ${deleting ? "#1a1a1a" : "#901a1a"}`,
+          borderRadius: 2,
+          padding: "6px 14px",
+          fontSize: 12,
+          color: deleting ? C.dim : C.red,
+          flexShrink: 0,
+        }}
+      >
+        {deleting ? "Removing…" : "Destroy"}
+      </button>
+    </div>
   );
 }
 
@@ -77,11 +111,9 @@ export default function App() {
   async function fetchServers() {
     try {
       const res = await fetch(`${API}/servers`);
-      if (!res.ok) throw new Error(await res.text());
+      if (!res.ok) throw new Error();
       setServers(await res.json());
-    } catch {
-      // silently keep stale data on poll failures
-    } finally {
+    } catch { /* keep stale data */ } finally {
       setLoading(false);
     }
   }
@@ -104,10 +136,7 @@ export default function App() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name }),
       });
-      if (!res.ok) {
-        const body = await res.json();
-        throw new Error(body.detail ?? "Unknown error");
-      }
+      if (!res.ok) { const b = await res.json(); throw new Error(b.detail ?? "Error"); }
       setNewName("");
       await fetchServers();
     } catch (err: any) {
@@ -117,81 +146,124 @@ export default function App() {
     }
   }
 
-  function handleDelete(name: string) {
-    setServers((prev) => prev.filter((s) => s.name !== name));
-  }
+  const online = servers.filter((s) => s.pod.ready).length;
 
   return (
-    <div style={{ maxWidth: 760, margin: "0 auto", padding: "48px 24px" }}>
-      <div style={{ marginBottom: 40 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 600, letterSpacing: "-0.3px" }}>MineForge AI</h1>
-        <p style={{ color: "#888", marginTop: 4 }}>Self-healing Minecraft infrastructure on Kubernetes</p>
+    <div style={{ maxWidth: 680, margin: "0 auto", padding: "48px 24px" }}>
+
+      {/* Header */}
+      <div style={{ marginBottom: 36 }}>
+        <h1 style={{
+          fontFamily: "'Press Start 2P', monospace",
+          fontSize: 18,
+          lineHeight: 1.5,
+          color: C.grassL,
+          textShadow: `2px 2px 0 #1a3a0a, 0 0 20px rgba(120,176,72,0.4)`,
+          letterSpacing: 1,
+        }}>
+          MineForge AI
+        </h1>
+        <p style={{ marginTop: 10, color: C.dim, fontSize: 12 }}>
+          Self-healing Minecraft infrastructure on Kubernetes
+        </p>
+
+        {/* Status bar */}
+        <div style={{
+          display: "flex", gap: 16, marginTop: 16, flexWrap: "wrap",
+          fontSize: 11, fontFamily: "monospace", color: C.dim,
+        }}>
+          <span style={{ color: online > 0 ? C.grassL : C.dim }}>
+            ● {online} server{online !== 1 ? "s" : ""} online
+          </span>
+          <span>⚙ AI agent watching</span>
+          <span>↻ syncs every 5s</span>
+        </div>
       </div>
 
-      <form onSubmit={handleCreate} style={{ display: "flex", gap: 8, marginBottom: 32 }}>
+      {/* Divider */}
+      <div style={{ height: 3, background: `linear-gradient(90deg, ${C.grass}, ${C.dirt})`, marginBottom: 28, borderRadius: 1 }} />
+
+      {/* Create form */}
+      <form onSubmit={handleCreate} style={{ display: "flex", gap: 10, marginBottom: 28 }}>
         <input
           value={newName}
-          onChange={(e) => setNewName(e.target.value)}
-          placeholder="server-name"
-          pattern="[a-z0-9\-]+"
-          title="Lowercase letters, numbers, and hyphens only"
+          onChange={(e) => setNewName(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))}
+          placeholder="my-server"
+          maxLength={32}
           style={{
             flex: 1,
-            border: "1px solid #ddd",
-            borderRadius: 4,
-            padding: "8px 12px",
+            background: C.stoneL,
+            border: `3px solid ${C.stoneLL}`,
+            borderTop: "3px solid #1a1a1a",
+            borderLeft: "3px solid #1a1a1a",
+            borderRadius: 2,
+            padding: "10px 14px",
             fontSize: 14,
+            color: C.text,
             outline: "none",
+            fontFamily: "monospace",
           }}
         />
         <button
           type="submit"
           disabled={creating || !newName.trim()}
           style={{
-            background: "#111",
-            color: "#fff",
-            border: "none",
-            borderRadius: 4,
-            padding: "8px 18px",
-            fontSize: 14,
-            fontWeight: 500,
-            opacity: creating || !newName.trim() ? 0.4 : 1,
+            background: creating || !newName.trim() ? C.stoneLL : C.grass,
+            border: "3px solid",
+            borderColor: creating || !newName.trim()
+              ? `#1a1a1a ${C.stoneLL} ${C.stoneLL} #1a1a1a`
+              : `#1a1a1a ${C.grassL} ${C.grassL} #1a1a1a`,
+            borderRadius: 2,
+            padding: "10px 20px",
+            fontSize: 13,
+            fontWeight: 600,
+            color: creating || !newName.trim() ? C.dim : C.text,
+            letterSpacing: 0.3,
+            whiteSpace: "nowrap",
           }}
         >
-          {creating ? "Creating…" : "New Server"}
+          {creating ? "Spawning…" : "⚔ New Server"}
         </button>
       </form>
 
       {error && (
-        <p style={{ color: "#c00", marginBottom: 16, fontSize: 13 }}>{error}</p>
+        <div style={{
+          background: "#3a1010", border: `2px solid ${C.red}`, borderRadius: 2,
+          padding: "10px 14px", marginBottom: 16, fontSize: 12, color: C.red,
+        }}>
+          ✗ {error}
+        </div>
       )}
 
+      {/* Server list */}
       {loading ? (
-        <p style={{ color: "#888" }}>Loading…</p>
+        <p style={{ color: C.dim, fontFamily: "monospace", fontSize: 12 }}>Loading world data…</p>
       ) : servers.length === 0 ? (
-        <p style={{ color: "#888" }}>No servers. Create one above.</p>
+        <div style={{
+          background: C.stoneL, border: `3px solid ${C.stoneLL}`,
+          borderRadius: 2, padding: "32px 24px", textAlign: "center",
+        }}>
+          <div style={{ fontSize: 32, marginBottom: 12 }}>🌍</div>
+          <p style={{ color: C.dim, fontSize: 13 }}>No servers yet. Create one above.</p>
+        </div>
       ) : (
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-          <thead>
-            <tr style={{ borderBottom: "2px solid #111", textAlign: "left" }}>
-              <th style={{ padding: "0 0 8px", fontWeight: 500, color: "#555" }}>Name</th>
-              <th style={{ padding: "0 8px 8px", fontWeight: 500, color: "#555" }}>Connect</th>
-              <th style={{ padding: "0 8px 8px", fontWeight: 500, color: "#555" }}>Status</th>
-              <th style={{ padding: "0 8px 8px", fontWeight: 500, color: "#555" }}>Health</th>
-              <th />
-            </tr>
-          </thead>
-          <tbody>
-            {servers.map((s) => (
-              <ServerRow key={s.name} server={s} onDelete={handleDelete} />
-            ))}
-          </tbody>
-        </table>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {servers.map((s) => (
+            <ServerCard key={s.name} server={s} onDelete={(n) => setServers((p) => p.filter((x) => x.name !== n))} />
+          ))}
+        </div>
       )}
 
-      <p style={{ marginTop: 48, color: "#ccc", fontSize: 12 }}>
-        Polls every 5s · AI agent auto-heals crash loops · {servers.length} server{servers.length !== 1 ? "s" : ""}
-      </p>
+      {/* Footer */}
+      <div style={{
+        marginTop: 48, paddingTop: 16,
+        borderTop: `2px solid ${C.stoneLL}`,
+        display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 8,
+        fontSize: 11, color: C.stoneLL, fontFamily: "monospace",
+      }}>
+        <span>MineForge AI — Phase 10</span>
+        <span style={{ color: C.diamond }}>K8s + ArgoCD + Ollama</span>
+      </div>
     </div>
   );
 }

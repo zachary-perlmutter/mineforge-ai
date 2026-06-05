@@ -17,3 +17,18 @@ output "ssh_command" {
   description = "SSH command to connect to the server node"
   value       = "ssh -i ~/.ssh/id_rsa ubuntu@${aws_instance.k3s_server.public_ip}"
 }
+
+output "web_url" {
+  description = "MineForge web portal URL"
+  value       = "https://${aws_cloudfront_distribution.web.domain_name}"
+}
+
+output "s3_bucket" {
+  description = "S3 bucket for the React build"
+  value       = aws_s3_bucket.web.bucket
+}
+
+output "cloudfront_id" {
+  description = "CloudFront distribution ID (needed for cache invalidation)"
+  value       = aws_cloudfront_distribution.web.id
+}
