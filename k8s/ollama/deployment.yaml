@@ -24,7 +24,7 @@ spec:
             - |
               ollama serve &
               SERVER_PID=$!
-              until curl -sf http://localhost:11434/api/tags; do sleep 2; done
+              sleep 5
               ollama pull llama3.2:1b
               kill $SERVER_PID
           env:
