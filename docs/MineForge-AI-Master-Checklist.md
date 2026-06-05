@@ -128,7 +128,7 @@ Check things off as you go. Reference `MineForge-AI-Project-Plan.md` for full co
 - [x] Agent action: detect crash patterns → diagnose with Ollama → log structured JSON verdict
 - [x] Agent action: auto-apply simple fixes (rollout restart, bump memory limits)
 - [x] Connect Prometheus metrics feed to agent for context (restarts/h, memory, CPU)
-- [ ] Test end-to-end: crash server → agent detects → agent fixes
+- [x] Test end-to-end: crash server → agent detects → agent fixes (3 restarts → Ollama diagnosed "plugin error" → rollout restart → recovered in ~65s)
 
 ---
 
