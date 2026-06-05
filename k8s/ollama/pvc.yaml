@@ -6,7 +6,8 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: longhorn
+  # local-path avoids Longhorn replica scheduling constraints — models are re-downloadable
+  storageClassName: local-path
   resources:
     requests:
       storage: 5Gi
