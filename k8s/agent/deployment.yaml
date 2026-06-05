@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mineforge-agent
+  namespace: minecraft
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mineforge-agent
+  template:
+    metadata:
+      labels:
+        app: mineforge-agent
+    spec:
+      serviceAccountName: mineforge-agent
+      containers:
+        - name: agent
+          image: python:3.12-slim
+          command: ["sh", "-c"]
+          args:
+            - pip install kubernetes requests --quiet && python /app/agent.py
+          env:
+            - name: OLLAMA_URL
+              value: "http://ollama.ollama.svc.cluster.local:11434"
+            - name: OLLAMA_MODEL
+              value: "llama3.2:1b"
+            - name: PROMETHEUS_URL
+              value: "http://kube-prometheus-stack-prometheus.monitoring.svc.cluster.local:9090"
+            - name: TARGET_NAMESPACE
+              value: "minecraft"
+            - name: TARGET_DEPLOYMENT
+              value: "minecraft"
+            - name: RESTART_THRESHOLD
+              value: "3"
+            - name: COOLDOWN_SECONDS
+              value: "300"
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "50m"
+            limits:
+              memory: "256Mi"
+              cpu: "200m"
+          volumeMounts:
+            - name: script
+              mountPath: /app
+      volumes:
+        - name: script
+          configMap:
+            name: mineforge-agent-script

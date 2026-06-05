@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ollama
+  namespace: ollama
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ollama
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: ollama
+    spec:
+      initContainers:
+        # Pull model on first start; subsequent starts skip if weights are cached on the PVC.
+        - name: model-puller
+          image: ollama/ollama:latest
+          command: ["sh", "-c"]
+          args:
+            - |
+              ollama serve &
+              SERVER_PID=$!
+              until curl -sf http://localhost:11434/api/tags; do sleep 2; done
+              ollama pull llama3.2:1b
+              kill $SERVER_PID
+          env:
+            - name: OLLAMA_MODELS
+              value: /models
+          resources:
+            requests:
+              memory: "1.5Gi"
+              cpu: "500m"
+            limits:
+              memory: "2.5Gi"
+              cpu: "2000m"
+          volumeMounts:
+            - name: models
+              mountPath: /models
+      containers:
+        - name: ollama
+          image: ollama/ollama:latest
+          ports:
+            - name: http
+              containerPort: 11434
+          env:
+            - name: OLLAMA_MODELS
+              value: /models
+          resources:
+            requests:
+              memory: "1.5Gi"
+              cpu: "200m"
+            limits:
+              memory: "2.5Gi"
+              cpu: "2000m"
+          readinessProbe:
+            httpGet:
+              path: /api/tags
+              port: 11434
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /api/tags
+              port: 11434
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            failureThreshold: 3
+          volumeMounts:
+            - name: models
+              mountPath: /models
+      volumes:
+        - name: models
+          persistentVolumeClaim:
+            claimName: ollama-models

@@ -115,19 +115,19 @@ Check things off as you go. Reference `MineForge-AI-Project-Plan.md` for full co
 - [x] Add readiness probe
 - [x] Configure resource requests and limits per Minecraft pod
 - [x] Set up Horizontal Pod Autoscaler (HPA) — maxReplicas: 1 due to RWO PVC; scales independently per server in multi-tenant Phase 10
-- [ ] Test self-healing: `kubectl delete pod <minecraft>` → watch it recover
+- [x] Test self-healing: `kubectl delete pod <minecraft>` → watch it recover (recovered in 73s, 0 restarts)
 - [x] Set up AlertManager rules to page (or log) on repeated crashes — `MinecraftRepeatedCrash` fires after 5 restarts/hour
 
 ---
 
 ## Phase 9: AI Layer (Ollama + Agent)
 
-- [ ] Deploy Ollama as a Kubernetes Deployment
-- [ ] Pull a model into Ollama (e.g., `llama3`, `mistral`)
-- [ ] Write AI agent script to read Minecraft logs and call Ollama
-- [ ] Agent action: detect crash patterns → suggest fix
-- [ ] Agent action: auto-apply simple fixes (restart pod, adjust memory limits)
-- [ ] Connect Prometheus metrics feed to agent for context
+- [x] Deploy Ollama as a Kubernetes Deployment (k8s/ollama/, model: llama3.2:1b)
+- [x] Pull a model into Ollama — initContainer pulls llama3.2:1b on first start, cached on Longhorn PVC
+- [x] Write AI agent script to read Minecraft logs and call Ollama (app/agent/agent.py)
+- [x] Agent action: detect crash patterns → diagnose with Ollama → log structured JSON verdict
+- [x] Agent action: auto-apply simple fixes (rollout restart, bump memory limits)
+- [x] Connect Prometheus metrics feed to agent for context (restarts/h, memory, CPU)
 - [ ] Test end-to-end: crash server → agent detects → agent fixes
 
 ---
