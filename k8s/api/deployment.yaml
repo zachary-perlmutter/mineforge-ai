@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mineforge-api
+  namespace: minecraft
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mineforge-api
+  template:
+    metadata:
+      labels:
+        app: mineforge-api
+    spec:
+      serviceAccountName: mineforge-api
+      containers:
+        - name: api
+          image: python:3.12-slim
+          command: ["sh", "-c"]
+          args:
+            - pip install fastapi uvicorn kubernetes pydantic --quiet && uvicorn main:app --host 0.0.0.0 --port 8000
+          workingDir: /app
+          ports:
+            - containerPort: 8000
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "50m"
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          volumeMounts:
+            - name: api-code
+              mountPath: /app
+      volumes:
+        - name: api-code
+          configMap:
+            name: mineforge-api-code

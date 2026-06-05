@@ -134,13 +134,13 @@ Check things off as you go. Reference `MineForge-AI-Project-Plan.md` for full co
 
 ## Phase 10: Web Portal
 
-- [ ] Build simple Flask or FastAPI backend
-- [ ] Endpoints: list servers, create server, delete server, get status
-- [ ] Backend calls Kubernetes API to spin up/down Minecraft pods
-- [ ] Build simple frontend (React or plain HTML) with "Create Server" button
-- [ ] Connect frontend to Supabase for server records and user data
-- [ ] Deploy frontend (Vercel or as a Kubernetes pod)
-- [ ] Test full flow: click "Create" → pod spins up → Dynmap goes live
+- [x] Build FastAPI backend (app/api/main.py) — no external DB, K8s API is source of truth
+- [x] Endpoints: GET /api/servers, POST /api/servers, DELETE /api/servers/{name}, GET /api/servers/{name}
+- [x] Backend calls Kubernetes API to spin up/down Minecraft pods (Deployment + Service + PVC per server)
+- [x] Build React frontend (app/web/) with "New Server" form, live status table, delete buttons
+- [x] Frontend deployed to Vercel (VITE_API_URL + VITE_NODE_IP env vars)
+- [x] NodePort range 30065-30074 for servers, 30090 for API — already open in Terraform SG
+- [ ] Test full flow: click "Create" → pod spins up → connect with Minecraft client
 
 ---
 
@@ -155,6 +155,12 @@ Check things off as you go. Reference `MineForge-AI-Project-Plan.md` for full co
 - [ ] Record demo video (follow `MineForge-AI-Video-Script.md`)
 - [ ] Add GitHub Actions CI/CD pipeline
 - [ ] Optional: deploy same stack to Hetzner to show multi-cloud
+
+---
+
+## Pending / Follow-up
+
+- [ ] Check AWS Cost Explorer in 24h — first visit triggered data prep (est. ~$63/mo: t3.large + 40GB EBS)
 
 ---
 

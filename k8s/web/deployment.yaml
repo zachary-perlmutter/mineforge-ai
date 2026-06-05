@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mineforge-web
+  namespace: minecraft
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mineforge-web
+  template:
+    metadata:
+      labels:
+        app: mineforge-web
+    spec:
+      initContainers:
+        # Build the React app on startup using the source from the ConfigMap.
+        # On real CI this would be a pre-built image; this avoids a registry.
+        - name: builder
+          image: node:20-slim
+          command: ["sh", "-c"]
+          args:
+            - cp -r /src /build/app && cd /build/app && npm install --silent && npm run build && cp -r dist/* /html/
+          volumeMounts:
+            - name: src
+              mountPath: /src
+            - name: html
+              mountPath: /html
+      containers:
+        - name: nginx
+          image: nginx:alpine
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - name: html
+              mountPath: /usr/share/nginx/html
+            - name: nginx-conf
+              mountPath: /etc/nginx/conf.d
+          resources:
+            requests:
+              memory: "32Mi"
+              cpu: "20m"
+            limits:
+              memory: "64Mi"
+              cpu: "100m"
+      volumes:
+        - name: src
+          configMap:
+            name: mineforge-web-src
+        - name: html
+          emptyDir: {}
+        - name: nginx-conf
+          configMap:
+            name: mineforge-web-nginx

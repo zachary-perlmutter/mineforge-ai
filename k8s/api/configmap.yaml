@@ -1,0 +1,244 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mineforge-api-code
+  namespace: minecraft
+data:
+  main.py: |
+    #!/usr/bin/env python3
+    """MineForge API — manage Minecraft server instances via the Kubernetes API."""
+
+    import os
+    from fastapi import FastAPI, HTTPException
+    from fastapi.middleware.cors import CORSMiddleware
+    from pydantic import BaseModel
+    from kubernetes import client, config
+
+    try:
+        config.load_incluster_config()
+    except config.ConfigException:
+        config.load_kube_config()
+
+    app = FastAPI(title="MineForge API", version="1.0.0")
+
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+    NAMESPACE = "minecraft"
+    LABEL = {"app.mineforge/type": "server"}
+    NODE_PORTS = list(range(30065, 30075))
+
+
+    def _apps():
+        return client.AppsV1Api()
+
+    def _core():
+        return client.CoreV1Api()
+
+
+    def _used_ports():
+        svcs = _core().list_namespaced_service(NAMESPACE, label_selector="app.mineforge/type=server")
+        ports = set()
+        for svc in svcs.items:
+            for p in svc.spec.ports or []:
+                if p.node_port:
+                    ports.add(p.node_port)
+        return ports
+
+
+    def _next_port():
+        used = _used_ports()
+        for p in NODE_PORTS:
+            if p not in used:
+                return p
+        raise HTTPException(status_code=409, detail="No free server slots (max 10)")
+
+
+    def _deployment(name, port):
+        return client.V1Deployment(
+            metadata=client.V1ObjectMeta(
+                name=f"mc-{name}", namespace=NAMESPACE,
+                labels={**LABEL, "app": f"mc-{name}"},
+            ),
+            spec=client.V1DeploymentSpec(
+                replicas=1,
+                strategy=client.V1DeploymentStrategy(type="Recreate"),
+                selector=client.V1LabelSelector(match_labels={"app": f"mc-{name}"}),
+                template=client.V1PodTemplateSpec(
+                    metadata=client.V1ObjectMeta(labels={"app": f"mc-{name}"}),
+                    spec=client.V1PodSpec(
+                        containers=[client.V1Container(
+                            name="minecraft",
+                            image="itzg/minecraft-server:latest",
+                            env=[
+                                client.V1EnvVar(name="EULA", value="TRUE"),
+                                client.V1EnvVar(name="TYPE", value="PAPER"),
+                                client.V1EnvVar(name="MEMORY", value="1024M"),
+                                client.V1EnvVar(name="MOTD", value=f"MineForge AI — {name}"),
+                                client.V1EnvVar(name="MAX_PLAYERS", value="10"),
+                            ],
+                            ports=[client.V1ContainerPort(container_port=25565)],
+                            resources=client.V1ResourceRequirements(
+                                requests={"memory": "1Gi", "cpu": "100m"},
+                                limits={"memory": "1.5Gi", "cpu": "2000m"},
+                            ),
+                            liveness_probe=client.V1Probe(
+                                tcp_socket=client.V1TCPSocketAction(port=25565),
+                                initial_delay_seconds=120, period_seconds=30, failure_threshold=3,
+                            ),
+                            readiness_probe=client.V1Probe(
+                                tcp_socket=client.V1TCPSocketAction(port=25565),
+                                initial_delay_seconds=60, period_seconds=10,
+                            ),
+                            volume_mounts=[client.V1VolumeMount(name="world", mount_path="/data")],
+                        )],
+                        volumes=[client.V1Volume(
+                            name="world",
+                            persistent_volume_claim=client.V1PersistentVolumeClaimVolumeSource(
+                                claim_name=f"mc-{name}-world"
+                            ),
+                        )],
+                    ),
+                ),
+            ),
+        )
+
+
+    def _service(name, port):
+        return client.V1Service(
+            metadata=client.V1ObjectMeta(
+                name=f"mc-{name}", namespace=NAMESPACE,
+                labels={**LABEL, "app": f"mc-{name}"},
+            ),
+            spec=client.V1ServiceSpec(
+                type="NodePort",
+                selector={"app": f"mc-{name}"},
+                ports=[client.V1ServicePort(
+                    name="minecraft", port=25565, target_port=25565,
+                    node_port=port, protocol="TCP",
+                )],
+            ),
+        )
+
+
+    def _pvc(name):
+        return client.V1PersistentVolumeClaim(
+            metadata=client.V1ObjectMeta(name=f"mc-{name}-world", namespace=NAMESPACE),
+            spec=client.V1PersistentVolumeClaimSpec(
+                access_modes=["ReadWriteOnce"],
+                storage_class_name="local-path",
+                resources=client.V1ResourceRequirements(requests={"storage": "5Gi"}),
+            ),
+        )
+
+
+    def _pod_status(name):
+        pods = _core().list_namespaced_pod(NAMESPACE, label_selector=f"app=mc-{name}")
+        if not pods.items:
+            return {"phase": "pending", "restarts": 0, "ready": False}
+        pod = pods.items[0]
+        restarts, ready = 0, False
+        if pod.status.container_statuses:
+            cs = pod.status.container_statuses[0]
+            restarts, ready = cs.restart_count, cs.ready
+        return {"phase": pod.status.phase or "Unknown", "restarts": restarts, "ready": ready}
+
+
+    class ServerCreate(BaseModel):
+        name: str
+
+
+    @app.get("/api/servers")
+    def list_servers():
+        deploys = _apps().list_namespaced_deployment(NAMESPACE, label_selector="app.mineforge/type=server")
+        svcs = {
+            s.metadata.name: s
+            for s in _core().list_namespaced_service(NAMESPACE, label_selector="app.mineforge/type=server").items
+        }
+        result = []
+        for d in deploys.items:
+            short = d.metadata.name[len("mc-"):]
+            svc = svcs.get(d.metadata.name)
+            port = None
+            if svc:
+                for p in svc.spec.ports or []:
+                    if p.node_port:
+                        port = p.node_port
+            result.append({
+                "name": short, "port": port,
+                "replicas": d.status.ready_replicas or 0,
+                "pod": _pod_status(short),
+                "created_at": d.metadata.creation_timestamp.isoformat() if d.metadata.creation_timestamp else None,
+            })
+        return result
+
+
+    @app.post("/api/servers", status_code=201)
+    def create_server(req: ServerCreate):
+        name = req.name.lower().strip()
+        if not name or not name.replace("-", "").isalnum():
+            raise HTTPException(status_code=400, detail="Name must be alphanumeric (hyphens ok)")
+        try:
+            _apps().read_namespaced_deployment(f"mc-{name}", NAMESPACE)
+            raise HTTPException(status_code=409, detail=f"Server '{name}' already exists")
+        except client.ApiException as e:
+            if e.status != 404:
+                raise
+        port = _next_port()
+        _core().create_namespaced_persistent_volume_claim(NAMESPACE, _pvc(name))
+        _apps().create_namespaced_deployment(NAMESPACE, _deployment(name, port))
+        _core().create_namespaced_service(NAMESPACE, _service(name, port))
+        return {"name": name, "port": port, "status": "creating"}
+
+
+    @app.delete("/api/servers/{name}", status_code=200)
+    def delete_server(name: str):
+        name = name.lower()
+        errors = []
+        for fn in [
+            lambda: _apps().delete_namespaced_deployment(f"mc-{name}", NAMESPACE),
+            lambda: _core().delete_namespaced_service(f"mc-{name}", NAMESPACE),
+            lambda: _core().delete_namespaced_persistent_volume_claim(f"mc-{name}-world", NAMESPACE),
+        ]:
+            try:
+                fn()
+            except client.ApiException as e:
+                if e.status != 404:
+                    errors.append(str(e))
+        if errors:
+            raise HTTPException(status_code=500, detail="; ".join(errors))
+        return {"name": name, "status": "deleted"}
+
+
+    @app.get("/api/servers/{name}")
+    def get_server(name: str):
+        name = name.lower()
+        try:
+            d = _apps().read_namespaced_deployment(f"mc-{name}", NAMESPACE)
+        except client.ApiException as e:
+            if e.status == 404:
+                raise HTTPException(status_code=404, detail="Server not found")
+            raise
+        port = None
+        try:
+            svc = _core().read_namespaced_service(f"mc-{name}", NAMESPACE)
+            for p in svc.spec.ports or []:
+                if p.node_port:
+                    port = p.node_port
+        except client.ApiException:
+            pass
+        return {
+            "name": name, "port": port,
+            "replicas": d.status.ready_replicas or 0,
+            "pod": _pod_status(name),
+            "created_at": d.metadata.creation_timestamp.isoformat() if d.metadata.creation_timestamp else None,
+        }
+
+
+    @app.get("/healthz")
+    def health():
+        return {"ok": True}
