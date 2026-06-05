@@ -27,6 +27,15 @@ spec:
             summary: "Minecraft pod is crash-looping"
             description: "Minecraft container has restarted {{ $value | humanize }} times in the last 15 minutes."
 
+        - alert: MinecraftRepeatedCrash
+          expr: increase(kube_pod_container_status_restarts_total{namespace="minecraft"}[1h]) >= 5
+          for: 0m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Minecraft pod has crashed 5+ times in 1 hour"
+            description: "Repeated crash detected ({{ $value | humanize }} restarts in 1h). Check OOMKiller or JVM flags. Pod: {{ $labels.pod }}."
+
         - alert: NodeMemoryHigh
           expr: 100 * (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) > 85
           for: 5m

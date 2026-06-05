@@ -79,44 +79,44 @@ Check things off as you go. Reference `MineForge-AI-Project-Plan.md` for full co
 
 ## Phase 5: Infrastructure as Code (Terraform)
 
-- [ ] Convert all manual AWS resources to Terraform modules
-- [ ] Set up remote Terraform state (S3 bucket + DynamoDB lock table)
+- [x] Convert all manual AWS resources to Terraform modules
+- [x] Set up remote Terraform state (S3 bucket + DynamoDB lock table)
 - [ ] Add Terraform module for Kubernetes namespaces and RBAC
-- [ ] Push all Terraform code to GitHub
+- [x] Push all Terraform code to GitHub
 - [ ] Verify `terraform destroy` + `terraform apply` recreates everything cleanly
 
 ---
 
 ## Phase 6: Configuration Management (Ansible)
 
-- [ ] Write playbook: K3s node bootstrap (install K3s, Docker, dependencies)
-- [ ] Write playbook: firewall rules and security hardening
-- [ ] Write playbook: Longhorn prerequisites
-- [ ] Write playbook: system tuning for Minecraft (JVM flags, ulimits)
-- [ ] Test idempotency — run playbooks twice, confirm no changes on second run
-- [ ] Push all playbooks to GitHub under `/ansible`
+- [x] Write playbook: K3s node bootstrap (install K3s, Docker, dependencies)
+- [x] Write playbook: firewall rules and security hardening
+- [x] Write playbook: Longhorn prerequisites
+- [x] Write playbook: system tuning for Minecraft (JVM flags, ulimits)
+- [x] Test idempotency — run playbooks twice, confirm no changes on second run
+- [x] Push all playbooks to GitHub under `/ansible`
 
 ---
 
 ## Phase 7: GitOps with ArgoCD
 
-- [ ] Install ArgoCD via Helm
-- [ ] Expose ArgoCD UI (port-forward or ingress)
-- [ ] Move all Kubernetes manifests to `/k8s` in GitHub repo
-- [ ] Create ArgoCD Application CRDs pointing at GitHub repo
-- [ ] Verify ArgoCD auto-syncs on git push
-- [ ] Set up sync policies (auto-heal, prune orphaned resources)
+- [x] Install ArgoCD via Helm
+- [x] Expose ArgoCD UI (port-forward or ingress)
+- [x] Move all Kubernetes manifests to `/k8s` in GitHub repo
+- [x] Create ArgoCD Application CRDs pointing at GitHub repo
+- [x] Verify ArgoCD auto-syncs on git push
+- [x] Set up sync policies (auto-heal, prune orphaned resources)
 
 ---
 
 ## Phase 8: Self-Healing & Automation
 
-- [ ] Add liveness probe to Minecraft pod (TCP check on port 25565)
-- [ ] Add readiness probe
-- [ ] Configure resource requests and limits per Minecraft pod
-- [ ] Set up Horizontal Pod Autoscaler (HPA) if running multi-tenant
+- [x] Add liveness probe to Minecraft pod (TCP check on port 25565)
+- [x] Add readiness probe
+- [x] Configure resource requests and limits per Minecraft pod
+- [x] Set up Horizontal Pod Autoscaler (HPA) — maxReplicas: 1 due to RWO PVC; scales independently per server in multi-tenant Phase 10
 - [ ] Test self-healing: `kubectl delete pod <minecraft>` → watch it recover
-- [ ] Set up AlertManager rules to page (or log) on repeated crashes
+- [x] Set up AlertManager rules to page (or log) on repeated crashes — `MinecraftRepeatedCrash` fires after 5 restarts/hour
 
 ---
 

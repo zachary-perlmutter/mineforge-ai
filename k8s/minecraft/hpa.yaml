@@ -1,0 +1,28 @@
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: minecraft
+  namespace: minecraft
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: minecraft
+  # Single-instance constraint: Minecraft cannot share a RWO PVC across pods.
+  # maxReplicas is 1 here; in a multi-tenant setup each server gets its own
+  # Deployment + PVC and this scales independently.
+  minReplicas: 1
+  maxReplicas: 1
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 80
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 85
