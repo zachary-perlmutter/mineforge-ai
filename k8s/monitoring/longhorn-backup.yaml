@@ -1,0 +1,66 @@
+# Longhorn native backup to S3.
+# Requires: mineforge-ai-backups-<ACCOUNT_ID> S3 bucket (see terraform/backup.tf)
+# Replace ACCOUNT_ID below before applying.
+#
+# Apply: kubectl apply -f k8s/monitoring/longhorn-backup.yaml
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mineforge-backup-creds
+  namespace: longhorn-system
+type: Opaque
+stringData:
+  AWS_ACCESS_KEY_ID: CHANGE_ME
+  AWS_SECRET_ACCESS_KEY: CHANGE_ME
+  AWS_DEFAULT_REGION: us-east-1
+  VIRTUAL_HOSTED_STYLE_FORCING_ENABLED: "false"
+---
+# Point Longhorn at the S3 bucket. Substitute your account ID.
+apiVersion: longhorn.io/v1beta2
+kind: Setting
+metadata:
+  name: backup-target
+  namespace: longhorn-system
+spec:
+  value: "s3://mineforge-ai-backups-ACCOUNT_ID@us-east-1/"
+---
+apiVersion: longhorn.io/v1beta2
+kind: Setting
+metadata:
+  name: backup-target-credential-secret
+  namespace: longhorn-system
+spec:
+  value: "mineforge-backup-creds"
+---
+# Daily backup at 04:00 UTC, retain 7 snapshots
+apiVersion: longhorn.io/v1beta2
+kind: RecurringJob
+metadata:
+  name: daily-backup
+  namespace: longhorn-system
+spec:
+  cron: "0 4 * * *"
+  task: backup
+  groups:
+    - default
+  retain: 7
+  concurrency: 1
+  labels:
+    schedule: daily
+---
+# Hourly snapshot (local only, no S3 cost), retain 24
+apiVersion: longhorn.io/v1beta2
+kind: RecurringJob
+metadata:
+  name: hourly-snapshot
+  namespace: longhorn-system
+spec:
+  cron: "0 * * * *"
+  task: snapshot
+  groups:
+    - default
+  retain: 24
+  concurrency: 1
+  labels:
+    schedule: hourly

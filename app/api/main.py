@@ -2,31 +2,147 @@
 """MineForge API — manage Minecraft server instances via the Kubernetes API."""
 
 import os
-from fastapi import FastAPI, HTTPException
+import secrets
+from typing import Optional
+from fastapi import FastAPI, HTTPException, Request, Response, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, constr
+from fastapi.responses import RedirectResponse
+from pydantic import BaseModel
 from kubernetes import client, config
+import httpx
+from jose import jwt, JWTError
 
 try:
     config.load_incluster_config()
 except config.ConfigException:
     config.load_kube_config()
 
-app = FastAPI(title="MineForge API", version="1.0.0")
+app = FastAPI(title="MineForge API", version="1.1.0")
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
+    allow_credentials=True,
 )
 
 NAMESPACE = "minecraft"
 LABEL = {"app.mineforge/type": "server"}
 NODE_PORTS = list(range(30065, 30075))  # 10 server slots
 
+# Discord OAuth — set these via K8s secret / env vars
+DISCORD_CLIENT_ID = os.getenv("DISCORD_CLIENT_ID", "")
+DISCORD_CLIENT_SECRET = os.getenv("DISCORD_CLIENT_SECRET", "")
+DISCORD_REDIRECT_URI = os.getenv("DISCORD_REDIRECT_URI", "")
+JWT_SECRET = os.getenv("JWT_SECRET", secrets.token_hex(32))
+JWT_ALGORITHM = "HS256"
 
-# ── helpers ──────────────────────────────────────────────────────────────────
+AUTH_ENABLED = bool(DISCORD_CLIENT_ID and DISCORD_CLIENT_SECRET)
+
+
+# ── auth helpers ──────────────────────────────────────────────────────────────
+
+def _make_token(user: dict) -> str:
+    return jwt.encode({"sub": user["id"], "username": user["username"], "avatar": user.get("avatar")}, JWT_SECRET, algorithm=JWT_ALGORITHM)
+
+
+def _decode_token(token: str) -> Optional[dict]:
+    try:
+        return jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+    except JWTError:
+        return None
+
+
+def _current_user(request: Request) -> Optional[dict]:
+    token = request.cookies.get("mf_token") or (request.headers.get("Authorization", "").removeprefix("Bearer ") or None)
+    if not token:
+        return None
+    return _decode_token(token)
+
+
+def require_auth(request: Request) -> dict:
+    if not AUTH_ENABLED:
+        return {"sub": "anon", "username": "anonymous"}
+    user = _current_user(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Login required")
+    return user
+
+
+# ── Discord OAuth routes ──────────────────────────────────────────────────────
+
+@app.get("/auth/discord")
+def discord_login():
+    if not AUTH_ENABLED:
+        raise HTTPException(status_code=501, detail="Discord OAuth not configured")
+    url = (
+        "https://discord.com/api/oauth2/authorize"
+        f"?client_id={DISCORD_CLIENT_ID}"
+        f"&redirect_uri={DISCORD_REDIRECT_URI}"
+        "&response_type=code"
+        "&scope=identify"
+    )
+    return RedirectResponse(url)
+
+
+@app.post("/auth/token")
+async def discord_token(body: dict, response: Response):
+    """Exchange a Discord authorization code for a session token."""
+    if not AUTH_ENABLED:
+        raise HTTPException(status_code=501, detail="Discord OAuth not configured")
+    code = body.get("code")
+    if not code:
+        raise HTTPException(status_code=400, detail="Missing code")
+
+    async with httpx.AsyncClient() as http:
+        # Exchange code for Discord access token
+        token_resp = await http.post(
+            "https://discord.com/api/oauth2/token",
+            data={
+                "client_id": DISCORD_CLIENT_ID,
+                "client_secret": DISCORD_CLIENT_SECRET,
+                "grant_type": "authorization_code",
+                "code": code,
+                "redirect_uri": DISCORD_REDIRECT_URI,
+            },
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+        )
+        if token_resp.status_code != 200:
+            raise HTTPException(status_code=400, detail="Discord token exchange failed")
+        access_token = token_resp.json()["access_token"]
+
+        # Fetch user profile
+        user_resp = await http.get(
+            "https://discord.com/api/users/@me",
+            headers={"Authorization": f"Bearer {access_token}"},
+        )
+        if user_resp.status_code != 200:
+            raise HTTPException(status_code=400, detail="Discord user fetch failed")
+        user = user_resp.json()
+
+    token = _make_token(user)
+    response.set_cookie("mf_token", token, httponly=True, samesite="lax", max_age=86400 * 7)
+    return {"token": token, "username": user["username"], "avatar": user.get("avatar")}
+
+
+@app.get("/auth/me")
+def auth_me(request: Request):
+    user = _current_user(request)
+    if not user:
+        if AUTH_ENABLED:
+            raise HTTPException(status_code=401, detail="Not authenticated")
+        return {"username": "anonymous", "auth_enabled": False}
+    return {"username": user.get("username"), "avatar": user.get("avatar"), "auth_enabled": True}
+
+
+@app.post("/auth/logout")
+def auth_logout(response: Response):
+    response.delete_cookie("mf_token")
+    return {"ok": True}
+
+
+# ── Kubernetes helpers ────────────────────────────────────────────────────────
 
 def _apps() -> client.AppsV1Api:
     return client.AppsV1Api()
@@ -173,7 +289,7 @@ class ServerCreate(BaseModel):
     name: str
 
 
-# ── routes ────────────────────────────────────────────────────────────────────
+# ── server routes ─────────────────────────────────────────────────────────────
 
 @app.get("/api/servers")
 def list_servers():
@@ -206,12 +322,11 @@ def list_servers():
 
 
 @app.post("/api/servers", status_code=201)
-def create_server(req: ServerCreate):
+def create_server(req: ServerCreate, user: dict = Depends(require_auth)):
     name = req.name.lower().strip()
     if not name or not name.replace("-", "").isalnum():
         raise HTTPException(status_code=400, detail="Name must be alphanumeric (hyphens ok)")
 
-    # check for existing
     try:
         _apps().read_namespaced_deployment(f"mc-{name}", NAMESPACE)
         raise HTTPException(status_code=409, detail=f"Server '{name}' already exists")
@@ -228,7 +343,7 @@ def create_server(req: ServerCreate):
 
 
 @app.delete("/api/servers/{name}", status_code=200)
-def delete_server(name: str):
+def delete_server(name: str, user: dict = Depends(require_auth)):
     name = name.lower()
     errors = []
 

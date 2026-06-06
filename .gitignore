@@ -30,3 +30,9 @@ __pycache__/
 # Editor
 .vscode/settings.json
 *.swp
+
+# Secrets (never commit the real versions)
+k8s/api/discord-secret.yaml
+
+# Web build output
+app/web/dist/

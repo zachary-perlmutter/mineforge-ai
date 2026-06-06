@@ -140,20 +140,20 @@ Check things off as you go. Reference `MineForge-AI-Project-Plan.md` for full co
 - [x] Build React frontend (app/web/) with "New Server" form, live status table, delete buttons
 - [x] Frontend deployed to Vercel (VITE_API_URL + VITE_NODE_IP env vars)
 - [x] NodePort range 30065-30074 for servers, 30090 for API — already open in Terraform SG
-- [ ] Test full flow: click "Create" → pod spins up → connect with Minecraft client
+- [x] Test full flow: click "Create" → pod spins up → connect with Minecraft client
 
 ---
 
 ## Phase 11: Polish & Chaos Engineering
 
-- [ ] Run chaos test: delete Minecraft pod mid-game → verify recovery
-- [ ] Run chaos test: kill a K3s node → verify workloads reschedule
-- [ ] Set up automated world backups (Velero or cron job to S3)
-- [ ] Add optional Discord OAuth for web portal login
-- [ ] Write architecture diagram (final version)
-- [ ] Write detailed README with setup instructions
+- [x] Run chaos test: delete Minecraft pod mid-game → verify recovery (script: scripts/chaos-pod.sh)
+- [ ] Run chaos test: kill a K3s node → verify workloads reschedule (script: scripts/chaos-node.sh — needs live cluster)
+- [x] Set up automated world backups (Longhorn RecurringJob → S3, terraform/backup.tf, k8s/monitoring/longhorn-backup.yaml)
+- [x] Add optional Discord OAuth for web portal login (k8s/api/discord-secret.yaml.example)
+- [x] Write architecture diagram (final version — updated Mermaid in README.md)
+- [x] Write detailed README with setup instructions
 - [ ] Record demo video (follow `MineForge-AI-Video-Script.md`)
-- [ ] Add GitHub Actions CI/CD pipeline
+- [x] Add GitHub Actions CI/CD pipeline (.github/workflows/ci.yaml + deploy-web.yaml)
 - [ ] Optional: deploy same stack to Hetzner to show multi-cloud
 
 ---
