@@ -186,25 +186,41 @@ export default function App() {
       <div style={{ height: 3, background: `linear-gradient(90deg, ${C.grass}, ${C.dirt})`, marginBottom: 24, borderRadius: 1 }} />
 
       {/* Tab nav */}
-      <div style={{ display: "flex", gap: 4, marginBottom: 24 }}>
-        {([["servers", "⚔ Servers"], ["how", "? How It Works"]] as const).map(([t, label]) => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            style={{
-              padding: "8px 16px",
-              background: tab === t ? C.stoneLL : "none",
-              border: `2px solid ${tab === t ? C.stoneLL : "transparent"}`,
-              borderRadius: 2,
-              color: tab === t ? C.text : C.dim,
-              fontSize: 12,
-              fontWeight: tab === t ? 600 : 400,
-              letterSpacing: 0.3,
-            }}
-          >
-            {label}
-          </button>
-        ))}
+      <div style={{ display: "flex", gap: 10, marginBottom: 24 }}>
+        <button
+          onClick={() => setTab("servers")}
+          style={{
+            padding: "8px 16px",
+            background: tab === "servers" ? C.stoneLL : "none",
+            border: `2px solid ${tab === "servers" ? C.stoneLL : "transparent"}`,
+            borderRadius: 2,
+            color: tab === "servers" ? C.text : C.dim,
+            fontSize: 12,
+            fontWeight: tab === "servers" ? 600 : 400,
+            letterSpacing: 0.3,
+          }}
+        >
+          ⚔ Servers
+        </button>
+        <button
+          onClick={() => setTab("how")}
+          style={{
+            flex: 1,
+            padding: "14px 20px",
+            background: tab === "how" ? C.diamond : C.stoneL,
+            border: `3px solid`,
+            borderColor: tab === "how"
+              ? `#1a1a1a #2ab8b8 #2ab8b8 #1a1a1a`
+              : `#1a1a1a ${C.stoneLL} ${C.stoneLL} #1a1a1a`,
+            borderRadius: 2,
+            color: tab === "how" ? "#111" : C.diamond,
+            fontSize: 15,
+            fontWeight: 700,
+            letterSpacing: 0.5,
+          }}
+        >
+          ? How It Works
+        </button>
       </div>
 
       {tab === "how" && <HowItWorks />}
