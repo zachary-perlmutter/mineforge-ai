@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import HowItWorks from "./HowItWorks";
 
 const API = import.meta.env.VITE_API_URL ?? "/api";
 const NODE_IP = import.meta.env.VITE_NODE_IP ?? "—";
@@ -101,6 +102,7 @@ function ServerCard({ server, onDelete }: { server: Server; onDelete: (n: string
 }
 
 export default function App() {
+  const [tab, setTab] = useState<"servers" | "how">("servers");
   const [servers, setServers] = useState<Server[]>([]);
   const [loading, setLoading] = useState(true);
   const [newName, setNewName] = useState("");
@@ -181,8 +183,33 @@ export default function App() {
       </div>
 
       {/* Divider */}
-      <div style={{ height: 3, background: `linear-gradient(90deg, ${C.grass}, ${C.dirt})`, marginBottom: 28, borderRadius: 1 }} />
+      <div style={{ height: 3, background: `linear-gradient(90deg, ${C.grass}, ${C.dirt})`, marginBottom: 24, borderRadius: 1 }} />
 
+      {/* Tab nav */}
+      <div style={{ display: "flex", gap: 4, marginBottom: 24 }}>
+        {([["servers", "⚔ Servers"], ["how", "? How It Works"]] as const).map(([t, label]) => (
+          <button
+            key={t}
+            onClick={() => setTab(t)}
+            style={{
+              padding: "8px 16px",
+              background: tab === t ? C.stoneLL : "none",
+              border: `2px solid ${tab === t ? C.stoneLL : "transparent"}`,
+              borderRadius: 2,
+              color: tab === t ? C.text : C.dim,
+              fontSize: 12,
+              fontWeight: tab === t ? 600 : 400,
+              letterSpacing: 0.3,
+            }}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {tab === "how" && <HowItWorks />}
+
+      {tab === "servers" && <>
       {/* Create form */}
       <form onSubmit={handleCreate} style={{ display: "flex", gap: 10, marginBottom: 28 }}>
         <input
@@ -253,6 +280,8 @@ export default function App() {
           ))}
         </div>
       )}
+
+      </>}
 
       {/* Footer */}
       <div style={{
