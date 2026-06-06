@@ -200,7 +200,7 @@ export default function App() {
             letterSpacing: 0.3,
           }}
         >
-          ⚔ Servers
+          Servers
         </button>
         <button
           onClick={() => setTab("how")}
@@ -219,7 +219,7 @@ export default function App() {
             letterSpacing: 0.5,
           }}
         >
-          📖 How It Works
+          [i] How It Works
         </button>
       </div>
 
@@ -265,7 +265,7 @@ export default function App() {
             whiteSpace: "nowrap",
           }}
         >
-          {creating ? "Spawning…" : "⚔ New Server"}
+          {creating ? "Spawning…" : "+ New Server"}
         </button>
       </form>
 
@@ -286,7 +286,6 @@ export default function App() {
           background: C.stoneL, border: `3px solid ${C.stoneLL}`,
           borderRadius: 2, padding: "32px 24px", textAlign: "center",
         }}>
-          <div style={{ fontSize: 32, marginBottom: 12 }}>🌍</div>
           <p style={{ color: C.dim, fontSize: 13 }}>No servers yet. Create one above.</p>
         </div>
       ) : (
