@@ -151,10 +151,9 @@ export default function App() {
   useEffect(() => {
     fetch(`${API}/auth/me`, {
       credentials: "include",
-      headers: (() => {
-        const t = localStorage.getItem("mf_token");
-        return t ? { Authorization: `Bearer ${t}` } : {};
-      })(),
+      headers: localStorage.getItem("mf_token")
+        ? { Authorization: `Bearer ${localStorage.getItem("mf_token") as string}` }
+        : undefined,
     })
       .then((r) => r.json())
       .then((data) => setUser(data))
