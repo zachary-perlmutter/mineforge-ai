@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from "react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faPlus, faCircleInfo, faServer, faTriangleExclamation, faXmark } from "@fortawesome/free-solid-svg-icons";
 import HowItWorks from "./HowItWorks";
 
 const API = import.meta.env.VITE_API_URL ?? "/api";
@@ -50,13 +52,7 @@ function ServerCard({ server, onDelete }: { server: Server; onDelete: (n: string
       alignItems: "center",
       gap: 16,
     }}>
-      {/* Grass block icon */}
-      <div style={{
-        width: 40, height: 40, flexShrink: 0, borderRadius: 2,
-        background: `linear-gradient(180deg, ${C.grassL} 40%, ${C.dirt} 40%)`,
-        border: `2px solid #1a1a1a`,
-        imageRendering: "pixelated",
-      }} />
+      <FontAwesomeIcon icon={faServer} style={{ fontSize: 20, color: C.grassL, flexShrink: 0, width: 24 }} />
 
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap" }}>
@@ -74,7 +70,8 @@ function ServerCard({ server, onDelete }: { server: Server; onDelete: (n: string
           ) : "—"}
           {server.pod.restarts > 0 && (
             <span style={{ marginLeft: 12, color: C.gold }}>
-              ⚠ {server.pod.restarts} restart{server.pod.restarts !== 1 ? "s" : ""}
+              <FontAwesomeIcon icon={faTriangleExclamation} style={{ marginRight: 4 }} />
+              {server.pod.restarts} restart{server.pod.restarts !== 1 ? "s" : ""}
             </span>
           )}
         </div>
@@ -219,7 +216,8 @@ export default function App() {
             letterSpacing: 0.5,
           }}
         >
-          [i] How It Works
+          <FontAwesomeIcon icon={faCircleInfo} style={{ marginRight: 8 }} />
+          How It Works
         </button>
       </div>
 
@@ -265,7 +263,7 @@ export default function App() {
             whiteSpace: "nowrap",
           }}
         >
-          {creating ? "Spawning…" : "+ New Server"}
+          {creating ? "Spawning…" : <><FontAwesomeIcon icon={faPlus} style={{ marginRight: 6 }} />New Server</>}
         </button>
       </form>
 
@@ -274,7 +272,7 @@ export default function App() {
           background: "#3a1010", border: `2px solid ${C.red}`, borderRadius: 2,
           padding: "10px 14px", marginBottom: 16, fontSize: 12, color: C.red,
         }}>
-          ✗ {error}
+          <FontAwesomeIcon icon={faXmark} style={{ marginRight: 6 }} />{error}
         </div>
       )}
 

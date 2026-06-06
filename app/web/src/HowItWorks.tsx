@@ -1,4 +1,10 @@
 import { useState } from "react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import {
+  faServer, faCubes, faCodeBranch, faChartLine, faBrain, faGlobe,
+  faLeaf, faCode,
+} from "@fortawesome/free-solid-svg-icons";
+import type { IconDefinition } from "@fortawesome/free-solid-svg-icons";
 
 const C = {
   grass:   "#5C8A2A",
@@ -15,7 +21,7 @@ const C = {
 };
 
 interface Section {
-  icon: string;
+  icon: IconDefinition;
   title: string;
   simple: string;
   technical: string;
@@ -24,7 +30,7 @@ interface Section {
 
 const sections: Section[] = [
   {
-    icon: "SRV",
+    icon: faServer,
     title: "The Server",
     simple:
       "Everything runs on a single powerful virtual machine in Amazon's cloud. Think of it like a dedicated gaming PC that never turns off, hosted remotely.",
@@ -33,7 +39,7 @@ const sections: Section[] = [
     badges: ["AWS EC2", "K3s", "Terraform", "Ansible"],
   },
   {
-    icon: "MC",
+    icon: faCubes,
     title: "Minecraft Servers",
     simple:
       "Each Minecraft server runs in its own isolated container. You can spin up as many as you want from the web portal, and each one gets its own saved world that persists even if the server restarts.",
@@ -42,7 +48,7 @@ const sections: Section[] = [
     badges: ["itzg/minecraft-server", "PVC", "NodePort", "Probes"],
   },
   {
-    icon: "GIT",
+    icon: faCodeBranch,
     title: "GitOps Deployment",
     simple:
       "All configuration lives in GitHub. Whenever we push a change, ArgoCD — a deployment robot — automatically applies it to the cluster. No manual steps, no \"it works on my machine.\"",
@@ -51,7 +57,7 @@ const sections: Section[] = [
     badges: ["ArgoCD", "GitHub", "Auto-sync"],
   },
   {
-    icon: "MON",
+    icon: faChartLine,
     title: "Monitoring",
     simple:
       "We have a live dashboard showing CPU usage, memory, and server health. If something looks wrong, the system sends an alert before it becomes a real problem.",
@@ -60,7 +66,7 @@ const sections: Section[] = [
     badges: ["Prometheus", "Grafana", "Loki", "AlertManager"],
   },
   {
-    icon: "AI",
+    icon: faBrain,
     title: "AI Self-Healing",
     simple:
       "An AI watches the servers constantly. If one crashes multiple times, it reads the server logs, figures out what went wrong, and fixes it automatically — no human needed. It uses a local AI model so nothing leaves the cluster.",
@@ -69,7 +75,7 @@ const sections: Section[] = [
     badges: ["Ollama", "llama3.2:1b", "Python", "K8s Watch API"],
   },
   {
-    icon: "WEB",
+    icon: faGlobe,
     title: "Web Portal",
     simple:
       "This website. You click a button, a Minecraft server appears. The portal talks to a backend API which tells Kubernetes what to do. The whole thing is hosted on AWS so it's fast and always available.",
@@ -121,7 +127,10 @@ export default function HowItWorks() {
               letterSpacing: 0.5,
             }}
           >
-            {m === "simple" ? "> Plain English" : "// Technical"}
+            {m === "simple"
+              ? <><FontAwesomeIcon icon={faLeaf} style={{ marginRight: 6 }} />Plain English</>
+              : <><FontAwesomeIcon icon={faCode} style={{ marginRight: 6 }} />Technical</>
+            }
           </button>
         ))}
       </div>
@@ -150,11 +159,7 @@ export default function HowItWorks() {
             padding: "16px 18px",
           }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-              <span style={{
-                fontSize: 10, fontFamily: "monospace", fontWeight: 700,
-                color: C.diamond, border: `1px solid ${C.diamond}`,
-                padding: "1px 5px", borderRadius: 2, letterSpacing: 0.5,
-              }}>{s.icon}</span>
+              <FontAwesomeIcon icon={s.icon} style={{ fontSize: 16, color: C.diamond, width: 18 }} />
               <span style={{ fontWeight: 600, fontSize: 14, color: C.text }}>{s.title}</span>
             </div>
             <p style={{ fontSize: 13, color: C.dim, lineHeight: 1.65, margin: 0 }}>
