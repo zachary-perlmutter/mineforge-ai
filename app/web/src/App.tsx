@@ -219,7 +219,7 @@ export default function App() {
             letterSpacing: 0.5,
           }}
         >
-          ? How It Works
+          📖 How It Works
         </button>
       </div>
 
