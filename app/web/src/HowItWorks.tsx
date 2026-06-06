@@ -58,7 +58,7 @@ const sections: Section[] = [
       "ArgoCD watches the GitHub repo (zachary-perlmutter/mineforge-ai) and auto-syncs every k8s/ subdirectory. Each subsystem has its own ArgoCD Application CRD with automated sync + self-heal + prune enabled. This means git is the single source of truth — if something drifts, ArgoCD corrects it within 3 minutes.",
     badges: ["ArgoCD", "GitHub", "Auto-sync"],
     links: [
-      { label: "ArgoCD Dashboard", url: "http://100.30.184.123:30081" },
+      { label: "ArgoCD Dashboard", url: "http://100.30.184.123:30081/applications" },
       { label: "GitHub Repo", url: "https://github.com/zachary-perlmutter/mineforge-ai" },
     ],
   },
@@ -71,7 +71,7 @@ const sections: Section[] = [
       "kube-prometheus-stack (Prometheus + Grafana + AlertManager) deployed via Helm. Loki handles log aggregation. Custom AlertManager rule MinecraftRepeatedCrash fires when kube_pod_container_status_restarts_total increases by 5+ in one hour. Grafana dashboard shows player count, pod CPU/RAM, restart count, and Dynmap web map (port 8123). The AI agent also queries Prometheus directly for real-time context before calling Ollama.",
     badges: ["Prometheus", "Grafana", "Loki", "AlertManager"],
     links: [
-      { label: "Grafana Dashboard", url: "http://100.30.184.123:30080" },
+      { label: "Grafana Dashboards", url: "http://100.30.184.123:30080/dashboards" },
     ],
   },
   {
