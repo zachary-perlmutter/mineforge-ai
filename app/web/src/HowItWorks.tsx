@@ -2,7 +2,7 @@ import { useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faServer, faCubes, faCodeBranch, faChartLine, faBrain, faGlobe,
-  faLeaf, faCode,
+  faLeaf, faCode, faArrowUpRightFromSquare,
 } from "@fortawesome/free-solid-svg-icons";
 import type { IconDefinition } from "@fortawesome/free-solid-svg-icons";
 
@@ -20,12 +20,14 @@ const C = {
   dim:     "#A0A090",
 };
 
+interface Link { label: string; url: string; }
 interface Section {
   icon: IconDefinition;
   title: string;
   simple: string;
   technical: string;
   badges?: string[];
+  links?: Link[];
 }
 
 const sections: Section[] = [
@@ -55,6 +57,10 @@ const sections: Section[] = [
     technical:
       "ArgoCD watches the GitHub repo (zachary-perlmutter/mineforge-ai) and auto-syncs every k8s/ subdirectory. Each subsystem has its own ArgoCD Application CRD with automated sync + self-heal + prune enabled. This means git is the single source of truth — if something drifts, ArgoCD corrects it within 3 minutes.",
     badges: ["ArgoCD", "GitHub", "Auto-sync"],
+    links: [
+      { label: "ArgoCD Dashboard", url: "http://100.30.184.123:30081" },
+      { label: "GitHub Repo", url: "https://github.com/zachary-perlmutter/mineforge-ai" },
+    ],
   },
   {
     icon: faChartLine,
@@ -64,6 +70,9 @@ const sections: Section[] = [
     technical:
       "kube-prometheus-stack (Prometheus + Grafana + AlertManager) deployed via Helm. Loki handles log aggregation. Custom AlertManager rule MinecraftRepeatedCrash fires when kube_pod_container_status_restarts_total increases by 5+ in one hour. Grafana dashboard shows player count, pod CPU/RAM, restart count, and Dynmap web map (port 8123). The AI agent also queries Prometheus directly for real-time context before calling Ollama.",
     badges: ["Prometheus", "Grafana", "Loki", "AlertManager"],
+    links: [
+      { label: "Grafana Dashboard", url: "http://100.30.184.123:30080" },
+    ],
   },
   {
     icon: faBrain,
@@ -82,6 +91,10 @@ const sections: Section[] = [
     technical:
       "FastAPI backend deployed as a K8s Deployment, exposed on NodePort 30090. It uses the kubernetes Python client with in-cluster config — no database, K8s is the source of truth. Each POST /api/servers creates a Deployment + Service + PVC atomically. The React + Vite + TypeScript frontend is built and deployed to S3 (mineforge-ai-web-908730890940). CloudFront (PriceClass_100) serves the SPA from S3 and proxies /api/* to EC2:30090 via a custom origin — this keeps all traffic HTTPS and avoids mixed-content issues. A CloudFront Function strips cache headers on .html responses to ensure fresh deploys are picked up immediately.",
     badges: ["FastAPI", "React", "S3", "CloudFront"],
+    links: [
+      { label: "Live Portal", url: "https://d373bnlpkszhhu.cloudfront.net" },
+      { label: "API Docs", url: "http://100.30.184.123:30090/docs" },
+    ],
   },
 ];
 
@@ -168,6 +181,32 @@ export default function HowItWorks() {
             {mode === "technical" && s.badges && (
               <div style={{ marginTop: 10 }}>
                 {s.badges.map((b) => <Badge key={b} label={b} />)}
+              </div>
+            )}
+            {s.links && (
+              <div style={{ display: "flex", gap: 10, marginTop: 12, flexWrap: "wrap" }}>
+                {s.links.map((l) => (
+                  <a
+                    key={l.url}
+                    href={l.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      display: "inline-flex", alignItems: "center", gap: 6,
+                      padding: "5px 12px",
+                      background: C.stone,
+                      border: `1px solid ${C.diamond}`,
+                      borderRadius: 2,
+                      fontSize: 11,
+                      color: C.diamond,
+                      textDecoration: "none",
+                      fontFamily: "monospace",
+                    }}
+                  >
+                    {l.label}
+                    <FontAwesomeIcon icon={faArrowUpRightFromSquare} style={{ fontSize: 9 }} />
+                  </a>
+                ))}
               </div>
             )}
           </div>
