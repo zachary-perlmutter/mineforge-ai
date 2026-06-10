@@ -70,7 +70,7 @@ data:
         return user
 
 
-    @app.get("/auth/discord")
+    @app.get("/api/auth/discord")
     def discord_login():
         if not AUTH_ENABLED:
             raise HTTPException(status_code=501, detail="Discord OAuth not configured")
@@ -82,7 +82,7 @@ data:
         )
         return RedirectResponse(url)
 
-    @app.post("/auth/token")
+    @app.post("/api/auth/token")
     async def discord_token(body: dict, response: Response):
         if not AUTH_ENABLED:
             raise HTTPException(status_code=501, detail="Discord OAuth not configured")
@@ -115,7 +115,7 @@ data:
         response.set_cookie("mf_token", token, httponly=True, samesite="lax", max_age=86400 * 7)
         return {"token": token, "username": user["username"], "avatar": user.get("avatar")}
 
-    @app.get("/auth/me")
+    @app.get("/api/auth/me")
     def auth_me(request: Request):
         user = _current_user(request)
         if not user:
@@ -124,7 +124,7 @@ data:
             return {"username": "anonymous", "auth_enabled": False}
         return {"username": user.get("username"), "avatar": user.get("avatar"), "auth_enabled": True}
 
-    @app.post("/auth/logout")
+    @app.post("/api/auth/logout")
     def auth_logout(response: Response):
         response.delete_cookie("mf_token")
         return {"ok": True}
