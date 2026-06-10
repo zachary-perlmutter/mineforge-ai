@@ -150,10 +150,18 @@ Check things off as you go. Reference `MineForge-AI-Project-Plan.md` for full co
 - [ ] Run chaos test: kill a K3s node → verify workloads reschedule (script: scripts/chaos-node.sh — needs live cluster)
 - [x] Set up automated world backups (Longhorn RecurringJob → S3, terraform/backup.tf, k8s/monitoring/longhorn-backup.yaml)
 - [x] Add optional Discord OAuth for web portal login (k8s/api/discord-secret.yaml.example)
+  - Code is fully written and OFF by default (no K8s secret = open access, no login wall)
+  - Recommendation: keep disabled for portfolio demos so recruiters hit the "wow" moment immediately (server spin-up) without a login wall
+  - To enable later: create Discord app at discord.com/developers, fill in k8s/api/discord-secret.yaml.example → discord-secret.yaml, `kubectl apply -f k8s/api/discord-secret.yaml`, `kubectl rollout restart deployment/mineforge-api -n minecraft`
 - [x] Write architecture diagram (final version — updated Mermaid in README.md)
 - [x] Write detailed README with setup instructions
 - [ ] Record demo video (follow `MineForge-AI-Video-Script.md`)
 - [x] Add GitHub Actions CI/CD pipeline (.github/workflows/ci.yaml + deploy-web.yaml)
+  - CI (lint Python, build React, validate Terraform) — green on every push
+  - Deploy Web (S3 sync + CloudFront invalidation) — triggered on app/web/** changes or manually via workflow_dispatch
+  - IAM user `mineforge-ai-ci` created with least-privilege policy (web S3 bucket + CloudFront distribution only)
+  - All secrets/variables set in GitHub Actions: AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, API_URL, NODE_IP, S3_BUCKET, CLOUDFRONT_ID
+  - Node.js 24 migration needed by Sept 16 2026 — update actions/checkout, actions/setup-node, aws-actions/configure-aws-credentials to latest versions when ready
 - [ ] Optional: deploy same stack to Hetzner to show multi-cloud
 
 ---

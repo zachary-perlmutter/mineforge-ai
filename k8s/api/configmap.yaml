@@ -36,7 +36,7 @@ data:
 
     NAMESPACE = "minecraft"
     LABEL = {"app.mineforge/type": "server"}
-    NODE_PORTS = list(range(30065, 30075))
+    NODE_PORTS = list(range(30065, 30068))
 
     DISCORD_CLIENT_ID = os.getenv("DISCORD_CLIENT_ID", "")
     DISCORD_CLIENT_SECRET = os.getenv("DISCORD_CLIENT_SECRET", "")
@@ -223,7 +223,7 @@ data:
             spec=client.V1PersistentVolumeClaimSpec(
                 access_modes=["ReadWriteOnce"],
                 storage_class_name="local-path",
-                resources=client.V1ResourceRequirements(requests={"storage": "5Gi"}),
+                resources=client.V1ResourceRequirements(requests={"storage": "1Gi"}),
             ),
         )
 
